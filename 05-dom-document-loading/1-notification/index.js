@@ -1,4 +1,6 @@
 export default class NotificationMessage {
+  static timeoutID = null;
+  static visibleElement = null;
   element = null;
 
   constructor(message, { duration, type } = {}) {
@@ -30,8 +32,20 @@ export default class NotificationMessage {
   }
 
   show(container = document.body) {
+    if (NotificationMessage.timeoutID) {
+      clearTimeout(NotificationMessage.timeoutID);
+      NotificationMessage.timeoutID = null;
+      NotificationMessage.visibleElement.remove();
+    }
+
     container.append(this.element);
-    setTimeout(() => this.remove(), this.duration);
+    NotificationMessage.visibleElement = this.element;
+
+    NotificationMessage.timeoutID = setTimeout(() => {
+      this.remove();
+      NotificationMessage.timeoutID = null;
+      NotificationMessage.visibleElement = null;
+    }, this.duration);
   }
 
   remove() {
