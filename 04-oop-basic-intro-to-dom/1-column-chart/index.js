@@ -60,10 +60,6 @@ export default class ColumnChart {
   }
 
   update(data) {
-    if (JSON.stringify(data) === JSON.stringify(this.data)) {
-      return;
-    }
-
     this.data = data;
     this.toggleView();
 
