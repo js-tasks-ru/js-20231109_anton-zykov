@@ -1,6 +1,4 @@
 export default class DoubleSlider {
-  element = null;
-
   constructor({
     min = 0,
     max = 100,
@@ -15,16 +13,26 @@ export default class DoubleSlider {
       to: selected.to ?? max,
     };
 
-    this._createElement();
+    this.element = this._createElement();
+
+    this.subElements = {
+      leftSlider: this.element.querySelector('.range-slider__thumb-left'),
+      rightSlider: this.element.querySelector('.range-slider__thumb-right'),
+      bar: this.element.querySelector('.range-slider__inner'),
+      progressBar: this.element.querySelector('.range-slider__progress'),
+      from: this.element.querySelector('span[data-element="from"]'),
+      to: this.element.querySelector('span[data-element="to"]'),
+    };
+
     this._activateSliders();
   }
 
-  _calculatePercentFromValue(value, side) {
+  _valueToPercent(value, side) {
     const leftOffset = Math.round((value - this.min) / (this.max - this.min) * 100);
     return side === 'left' ? leftOffset : 100 - leftOffset;
   }
 
-  _calculateValueFromPercent(percent, side) {
+  _percentToValue(percent, side) {
     const offset = Math.round((this.max - this.min) * percent / 100);
     return side === 'left' ? this.min + offset : this.max - offset;
   }
@@ -35,11 +43,11 @@ export default class DoubleSlider {
         <span data-element="from">${this.formatValue(this.selected.from)}</span>
         <div class="range-slider__inner">
           <span class="range-slider__progress" style="
-            left: ${this._calculatePercentFromValue(this.selected.from, 'left')}%;
-            right: ${this._calculatePercentFromValue(this.selected.to, 'right')}%">
+            left: ${this._valueToPercent(this.selected.from, 'left')}%;
+            right: ${this._valueToPercent(this.selected.to, 'right')}%">
           </span>
-          <span class="range-slider__thumb-left" style="left: ${this._calculatePercentFromValue(this.selected.from, 'left')}%"></span>
-          <span class="range-slider__thumb-right" style="right: ${this._calculatePercentFromValue(this.selected.to, 'right')}%"></span>
+          <span class="range-slider__thumb-left" style="left: ${this._valueToPercent(this.selected.from, 'left')}%"></span>
+          <span class="range-slider__thumb-right" style="right: ${this._valueToPercent(this.selected.to, 'right')}%"></span>
         </div>
         <span data-element="to">${this.formatValue(this.selected.to)}</span>
       </div>
@@ -49,71 +57,65 @@ export default class DoubleSlider {
   _createElement() {
     const element = document.createElement('div');
     element.innerHTML = this._createTemplate();
-    this.element = element.firstElementChild;
-
-    this.leftSlider = this.element.querySelector('.range-slider__thumb-left');
-    this.rightSlider = this.element.querySelector('.range-slider__thumb-right');
-    this.bar = this.element.querySelector('.range-slider__inner');
-    this.progressBar = this.element.querySelector('.range-slider__progress');
-    this.fromValue = this.element.querySelector('span[data-element="from"]');
-    this.toValue = this.element.querySelector('span[data-element="to"]');
+    return element.firstElementChild;
   }
 
   _activateSliders() {
-    const onChangeEvent = new CustomEvent('range-select', {
-      detail: {
-        from: 130,
-        to: 150,
-      },
-    });
+    const onMouseMoveLeftSlider = (event) => {
+      const barBoundaries = this.subElements.bar.getBoundingClientRect();
+      const halfSliderWidth = 6 / 2;
 
-    const handleValueUpdate = (percent, side) => {
-      if (side === 'left') {
-        this.fromValue.textContent = this.formatValue(this._calculateValueFromPercent(percent, side));
+      const percentOffset = Math.round(Math.min(Math.max((event.clientX - barBoundaries.left + halfSliderWidth) / barBoundaries.width * 100, 0), 100 - parseInt(this.subElements.rightSlider.style.right)));
+      this.selected.from = this._percentToValue(percentOffset, 'left');
+      this.subElements.from.textContent = this.formatValue(this.selected.from);
+
+      this.subElements.leftSlider.style.left = percentOffset + '%';
+      this.subElements.progressBar.style.left = percentOffset + '%';
+    };
+
+    const onMouseMoveRightSlider = (event) => {
+      const barBoundaries = this.subElements.bar.getBoundingClientRect();
+      const halfSliderWidth = 6 / 2;
+
+      const percentOffset = Math.round(Math.min(Math.max(100 - (event.clientX - barBoundaries.left + halfSliderWidth) / barBoundaries.width * 100, 0), 100 - parseInt(this.subElements.leftSlider.style.left)));
+      this.selected.to = this._percentToValue(percentOffset, 'right');
+      this.subElements.to.textContent = this.formatValue(this.selected.to);
+
+      this.subElements.rightSlider.style.right = percentOffset + '%';
+      this.subElements.progressBar.style.right = percentOffset + '%';
+    };
+
+    this.subElements.bar.addEventListener('pointerdown', (event) => {
+      let onMouseMove;
+
+      if (event.target === this.subElements.leftSlider) {
+        document.removeEventListener('pointermove', onMouseMoveRightSlider);
+        onMouseMove = onMouseMoveLeftSlider;
+      } else if (event.target === this.subElements.rightSlider) {
+        document.removeEventListener('pointermove', onMouseMoveLeftSlider);
+        onMouseMove = onMouseMoveRightSlider;
       } else {
-        this.toValue.textContent = this.formatValue(this._calculateValueFromPercent(percent, side));
+        return;
       }
-    };
 
-    const handleMovement = (side) => {
-      const slider = this;
-      return function() {
-        const { left: leftEdge, right: rightEdge } = slider.bar.getBoundingClientRect();
-        const sliderWidth = parseInt(getComputedStyle(this).width) / 2;
-
-        const moveAtLeft = (pageX) => {
-          const percentOffset = Math.round(Math.min(Math.max((pageX - leftEdge + sliderWidth) / (rightEdge - leftEdge) * 100, 0), 100 - parseInt(slider.rightSlider.style.right)));
-          handleValueUpdate(percentOffset, 'left');
-
-          this.style.left = percentOffset + '%';
-          slider.progressBar.style.left = this.style.left;
-        };
-
-        const moveAtRight = (pageX) => {
-          const percentOffset = Math.round(Math.min(Math.max(100 - (pageX - leftEdge + sliderWidth) / (rightEdge - leftEdge) * 100, 0), 100 - parseInt(slider.leftSlider.style.left)));
-          handleValueUpdate(percentOffset, 'right');
-
-          this.style.right = percentOffset + '%';
-          slider.progressBar.style.right = this.style.right;
-        };
-
-        const moveAt = side === 'left' ? moveAtLeft : moveAtRight;
-        const onMouseMove = (event) => moveAt(event.pageX);
-
-        document.addEventListener('pointermove', onMouseMove);
-        document.addEventListener(
-          'pointerup',
-          () => {
-            document.removeEventListener('pointermove', onMouseMove);
-            document.dispatchEvent(onChangeEvent);
-          },
-          { once: true }
-        );
-      };
-    };
-
-    this.leftSlider.onpointerdown = handleMovement('left');
-    this.rightSlider.onpointerdown = handleMovement('right');
+      document.addEventListener('pointermove', onMouseMove);
+      document.addEventListener(
+        'pointerup',
+        () => {
+          document.removeEventListener('pointermove', onMouseMove);
+          this.element.dispatchEvent(
+            new CustomEvent('range-select', {
+              detail: {
+                from: this.selected.from,
+                to: this.selected.to,
+              },
+              bubbles: true,
+            })
+          );
+        },
+        { once: true }
+      );
+    });
   }
 
   remove() {
