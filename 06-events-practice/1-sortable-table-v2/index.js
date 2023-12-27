@@ -6,6 +6,7 @@ export default class SortableTable extends SortableTablev1 {
     sorted = {}
   } = {}) {
     super(headersConfig, data);
+    this.originalData = [...this.data];
     this.isSortLocally = true;
     this.sorted = { ...sorted };
     this.sort();
@@ -13,7 +14,7 @@ export default class SortableTable extends SortableTablev1 {
   }
 
   createListenersForHeaders() {
-    for (let headerCell of this.subElements.header.children) {
+    for (const headerCell of this.subElements.header.children) {
       if (headerCell.dataset.sortable === 'true') {
         headerCell.addEventListener('pointerdown', () => {
           this.sorted.id = headerCell.dataset.id;
@@ -41,7 +42,7 @@ export default class SortableTable extends SortableTablev1 {
   }
 
   filter(field, value) {
-    this.data = this.data.filter((item) => item[field] === value);
+    this.data = this.originalData.filter((item) => item[field] === value);
     this.sort();
   }
 }
