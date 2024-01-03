@@ -8,7 +8,11 @@ export default class SortableTable extends SortableTablev1 {
     super(headersConfig, data);
     this.originalData = [...this.data];
     this.isSortLocally = true;
+
     this.sorted = { ...sorted };
+    this.sorted.order ??= 'asc';
+    this.sorted.id ??= headersConfig.find((header) => header.sortable).id;
+
     this.sort();
     this.createListenersForHeaders();
   }
