@@ -21,23 +21,26 @@ export default class SortableTable extends SortableTablev1 {
     for (const headerCell of this.subElements.header.children) {
       if (headerCell.dataset.sortable === 'true') {
         headerCell.addEventListener('pointerdown', () => {
-          this.sorted.id = headerCell.dataset.id;
-          this.sorted.order = headerCell.dataset.order === 'desc' ? 'asc' : 'desc';
-          this.sort();
+          this.sort(
+            headerCell.dataset.id,
+            headerCell.dataset.order === 'desc' ? 'asc' : 'desc'
+          );
         });
       }
     }
   }
 
-  sort() {
+  sort(id = this.sorted.id, order = this.sorted.order) {
     if (this.isSortLocally) {
-      this.sortOnClient();
+      this.sortOnClient(id, order);
     } else {
-      this.sortOnServer();
+      this.sortOnServer(id, order);
     }
   }
 
-  sortOnClient() {
+  sortOnClient(id, order) {
+    this.sorted.id = id;
+    this.sorted.order = order;
     super.sort(this.sorted.id, this.sorted.order);
   }
 

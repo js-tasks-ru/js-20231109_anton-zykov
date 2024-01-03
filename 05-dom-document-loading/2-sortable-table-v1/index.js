@@ -10,17 +10,21 @@ export default class SortableTable {
   constructor(headerConfig = [], data = []) {
     this.headerConfig = headerConfig;
 
-    this.data = data.map((item) => {
-      const driedItem = pick(item, ...headerConfig.map((column) => column.id));
-      driedItem.rowElement = this.createTableRow(item);
-      return driedItem;
-    });
+    this.data = this.normalizeData(data);
 
     this.subElements = {
       header: this.createTableHeader(),
       body: this.createTableBody(),
     };
     this.element = this.createElement();
+  }
+
+  normalizeData(data) {
+    return data.map((item) => {
+      const driedItem = pick(item, ...this.headerConfig.map((column) => column.id));
+      driedItem.rowElement = this.createTableRow(item);
+      return driedItem;
+    });
   }
 
   createTableRow(item) {
@@ -92,7 +96,13 @@ export default class SortableTable {
     }
 
     this.subElements.body = this.createTableBody();
+    this.createArrow(field, order);
 
+    this.element.querySelector('[data-element="body"]').remove();
+    this.element.append(this.subElements.body);
+  }
+
+  createArrow(field, order) {
     if (this.arrow.column) {
       this.arrow.column.removeAttribute('data-order');
       this.arrow.column.lastElementChild.remove();
@@ -109,9 +119,6 @@ export default class SortableTable {
     this.arrow.column = this.element.querySelector(`[data-id="${field}"]`);
     this.arrow.column.dataset.order = order;
     this.arrow.column.append(this.arrow.element);
-
-    this.element.lastElementChild.remove();
-    this.element.append(this.subElements.body);
   }
 
   remove() {
