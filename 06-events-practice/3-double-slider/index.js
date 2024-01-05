@@ -98,23 +98,22 @@ export default class DoubleSlider {
         return;
       }
 
+      const onPointerUp = () => {
+        document.removeEventListener('pointermove', onMouseMove);
+        this.element.dispatchEvent(
+          new CustomEvent('range-select', {
+            detail: {
+              from: this.selected.from,
+              to: this.selected.to,
+            },
+            bubbles: true,
+          })
+        );
+        document.removeEventListener('pointerup', onPointerUp);
+      };
+
       document.addEventListener('pointermove', onMouseMove);
-      document.addEventListener(
-        'pointerup',
-        () => {
-          document.removeEventListener('pointermove', onMouseMove);
-          this.element.dispatchEvent(
-            new CustomEvent('range-select', {
-              detail: {
-                from: this.selected.from,
-                to: this.selected.to,
-              },
-              bubbles: true,
-            })
-          );
-        },
-        { once: true }
-      );
+      document.addEventListener('pointerup', onPointerUp);
     });
   }
 
