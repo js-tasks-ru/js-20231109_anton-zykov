@@ -253,16 +253,15 @@ export default class ProductForm {
   }
 
   remove () {
+    this.element.remove();
+  }
+
+  destroy () {
     this.subElements.uploadImageButton.removeEventListener('click', this.handleImageAdd);
     this.subElements.uploadImageFakeForm.removeEventListener('change', this.handleNewImageUploaded);
     for (const image of this.subElements.imageListContainer.firstElementChild.children) {
       setTimeout(() => image.querySelector('[data-delete-handle]').click(), 0);
     }
-
-    this.element.remove();
-  }
-
-  destroy () {
     this.remove();
   }
 }
