@@ -245,15 +245,15 @@ export default class RangePicker {
   }
 
   remove () {
+    this.element.remove();
+  }
+
+  destroy () {
     this.subElements.input.removeEventListener('click', this.handleCalendarOpen);
     document.removeEventListener('click', this.handleCalendarClose);
     if (this.subElements.selector.innerHTML) {
       this.destroySelector();
     }
-    this.element.remove();
-  }
-
-  destroy () {
     this.remove();
   }
 }
